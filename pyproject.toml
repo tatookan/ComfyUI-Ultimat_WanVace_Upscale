@@ -1,0 +1,15 @@
+# pyproject.toml
+[project]
+name = "ComfyUI-SuperUltimateVaceTools"
+description = "powerful nodes for wan2.1 vace"
+version = "0.0.1"
+license = { file = "LICENSE.txt" }
+dependencies  = [] 
+
+[project.urls]
+Repository = "https://github.com/bbaudio-2025/ComfyUI-SuperUltimateVaceTools"
+
+[tool.comfy]
+PublisherId = "bbaudio" 
+DisplayName = "ComfyUI-SuperUltimateVaceTools" 
+Icon = ""

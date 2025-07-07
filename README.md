@@ -9,7 +9,9 @@ Including following nodes:
 
 ## SuperUltimateVaceUpscale
 对视频进行分割放大，支持空间分割以及时间分割。  
-Upscale video by splitting it into tiled areas, supports spatial tiling and temporal tiling.
+Upscale video by splitting it into tiled areas, supports spatial tiling and temporal tiling.  
+
+https://github.com/user-attachments/assets/ba9f91a1-b097-4ff2-9780-db85d014c978
 
 ### 空间分割 | Spatial tiling
 默认情况下视频将由左向右、由上向下平均分割成矩形，分割块的数目由放大后尺寸与生成尺寸共同决定。块之间叠加区域同样由这些数值决定，为了避免出现明显分割痕迹，放大尺寸对生成尺寸取余的数值不能过小。  

@@ -47,6 +47,13 @@ def feather(mask, left=0, top=0, right=0, bottom=0):
 
     return output
 
+def repeat_tensor(tensor, batch, dim=0):
+    repeat_list = []
+    for n in range(batch):
+        repeat_list.append(tensor)
+    result = torch.cat(repeat_list, dim=dim)
+    return result
+
 def imgcomposite(destination, source, x, y, mask):
     des_copy = destination.clone()
     des_crop = des_copy[:, y:(source.shape[1] + y), x:(source.shape[2] + x), :]
@@ -313,11 +320,12 @@ QQ群：948626609
                 offset_x_n = item['offset_x']
                 offset_y_n = item['offset_y']
                 video = imagecrop(upscaled_video, width_crop_n, height_crop_n, offset_x_n, offset_y_n)
-                mask_ctl = maskasemble(length_n, width_crop_n, height_crop_n, 1, 0, 
+                mask_ctl = maskasemble(1, width_crop_n, height_crop_n, 1, 0, 
                                     min(item['mask_left'], pad_mask_limit), 
                                     min(item['mask_top'], pad_mask_limit), 
                                     min(item['mask_right'], pad_mask_limit), 
                                     min(item['mask_bottom'], pad_mask_limit))
+                mask_ctl = repeat_tensor(mask_ctl, length_n)
                 if turn_index > 0 and cross_fade > 0:
                     mask_ctl[:cross_fade] = torch.full((cross_fade, height_crop_n, width_crop_n,), 0.0, device='cpu')
                 crop_gen = imagecrop(result_video, width_crop_n, height_crop_n, offset_x_n, offset_y_n)
@@ -348,7 +356,8 @@ QQ群：948626609
                     mask_ctl[-loopback_crossfade:] = torch.full((1, height_crop_n, width_crop_n), 0.0, device='cpu')
                 sampled_video = vace_sample(model, positive, negative, vae, width_crop_n, height_crop_n, length_n, strength, seed, cfg, sampler_name, scheduler, steps, denoise, video,
                     controls, mask_ctl, refimg)
-                mask_feather = feather(torch.full((length_n, height_crop_n, width_crop_n), 1.0, device='cpu'), item['feather_left'], item['feather_top'], item['feather_right'], item['feather_bottom'])
+                mask_feather = feather(torch.full((1, height_crop_n, width_crop_n), 1.0, device='cpu'), item['feather_left'], item['feather_top'], item['feather_right'], item['feather_bottom'])
+                mask_feather = repeat_tensor(mask_feather, length_n)
                 result_video = imgcomposite(result_video, sampled_video, offset_x_n, offset_y_n, mask_feather)
                 index += 1
                 total_tile = len(temporalist) * len(croparea_list)

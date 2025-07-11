@@ -296,6 +296,8 @@ QQ群：948626609
                 control_cross_slice = control_video[:loopback_crossfade].clone()
                 control_video = torch.cat((control_video, control_cross_slice), dim=0)
         total_frame = input_video.shape[0]
+        if total_frame > length and crossfade_frame == 0:
+            raise ValueError("视频帧数大于length，需要设置crossfade_frame以启用时间分割\nFrame count of input video is larger than length, need set a proper value for crossfade_frame to enable temporal tiling")        
         strength = 1 # VACE Strength
         temporalist = temporalistgen(total_frame, length, crossfade_frame, loopback_crossfade)
         upscaled_videos_list = []

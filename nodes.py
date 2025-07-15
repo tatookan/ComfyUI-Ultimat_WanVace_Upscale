@@ -110,6 +110,8 @@ def spatialistgen(width_upscale, height_upscale, width, height, spatial_multipli
     return croparea_list
 
 def temporalistgen(num_total_frame, length, num_crossfade, num_loopback_crossfade, temporal_multiplier=4):
+    if num_total_frame < length:
+        raise ValueError("temporalistgen: 视频帧数应该大于length\nframe count of input video should be larger than length")
     res_frame = num_total_frame
     slice_list = []
     while res_frame + num_crossfade > length:

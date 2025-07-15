@@ -110,26 +110,31 @@ def spatialistgen(width_upscale, height_upscale, width, height, spatial_multipli
     return croparea_list
 
 def temporalistgen(num_total_frame, length, num_crossfade, num_loopback_crossfade, temporal_multiplier=4):
-    frame_res = (num_total_frame) % (length - num_crossfade)
-    frame_res_padded = frame_res + num_crossfade
-    if (frame_res_padded - 1) % temporal_multiplier != 0:
-        frame_res_padded = frame_res_padded + temporal_multiplier - (frame_res_padded - 1) % temporal_multiplier
-    if num_total_frame > length:
-        num_tile_t = (num_total_frame) // (length - num_crossfade) + 1
-    else:
-        num_tile_t = 1
-        num_crossfade = 0
-        frame_res = frame_res_padded = length
+    res_frame = num_total_frame
     slice_list = []
-    for n in range(num_tile_t):
+    while res_frame + num_crossfade > length:
+        start_index = num_total_frame - res_frame - num_crossfade if res_frame != num_total_frame else 0
+        res_frame = res_frame - length
         slice_list.append({
-            'start_index': 0 if n == 0 else num_total_frame - frame_res_padded if n == num_tile_t - 1 else n * (length - num_crossfade),
-            'length': length if n != num_tile_t - 1 else frame_res_padded,
-            'num_crossfade': num_crossfade if n != num_tile_t - 1 else frame_res_padded - frame_res + num_crossfade,
-            'flag_final_slice': True if n == num_tile_t - 1 else False
+            'start_index': start_index,
+            'length': length,
+            'num_crossfade': num_crossfade,
+            'flag_final_slice': False,
         })
-        if length < num_loopback_crossfade:
-            raise ValueError("temporalistgen: loopback_crossfade数值过大，尝试减小\nloopback_crossfade too large")
+    res_frame += num_crossfade
+    if (res_frame - 1) % temporal_multiplier != 0:
+        res_frame_padded = res_frame + temporal_multiplier - (res_frame - 1) % temporal_multiplier
+    else:
+        res_frame_padded = res_frame
+    num_crossfade_end = res_frame_padded - res_frame + num_crossfade
+    if num_loopback_crossfade > num_crossfade_end:
+        raise ValueError("temporalistgen: num_loopback_crossfade过大，尝试减小\nnum_loopback_crossfade is too large, try to decrease it")
+    slice_list.append({
+        'start_index': num_total_frame - res_frame_padded,
+        'length': res_frame_padded,
+        'num_crossfade': num_crossfade_end,
+        'flag_final_slice': True,
+    })
     return slice_list
 
 def corssfadevideos(video1, video2, num_corssfade_frame):

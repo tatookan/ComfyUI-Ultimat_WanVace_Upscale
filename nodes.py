@@ -335,7 +335,7 @@ QQ群：948626609
                     crop_ctl = imagecrop(up_scaled_control, width_crop_n, height_crop_n, offset_x_n, offset_y_n)
                     controls = imgcomposite(crop_ctl, crop_gen, 0, 0, 1-mask_ctl) if index != 0 else crop_ctl
                 else:
-                    controls = crop_gen if index != 0 else torch.full((length_n, height_crop_n, width_crop_n, 3), 0.5, device='cpu')
+                    controls = crop_gen[:length_n] if index != 0 else torch.full((length_n, height_crop_n, width_crop_n, 3), 0.5, device='cpu')
                 if reference_image is not None:
                     reference_image = comfy.utils.common_upscale(reference_image.movedim(-1, 1), width_upscale, height_upscale, "bilinear", "center").movedim(1, -1)
                     if crop_ref is True:

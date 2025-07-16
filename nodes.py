@@ -5,6 +5,7 @@ import comfy.sample
 import nodes
 import node_helpers
 import latent_preview
+from comfy.comfy_types import IO
 
 def emptyimage(width, height, batch_size=1, color=(0,0,0)):
     r = torch.full([batch_size, height, width, 1], color[0] / 255, dtype=torch.float32, device="cpu")
@@ -139,13 +140,13 @@ def temporalistgen(num_total_frame, length, num_crossfade, num_loopback_crossfad
     })
     return slice_list
 
-def corssfadevideos(video1, video2, num_corssfade_frame):
+def crossfadevideos(video1, video2, num_corssfade_frame):
     if video1.ndim != video2.ndim:
-        raise ValueError("corssfadevideos: 拼接图片类型不一致\nImageType Mismatch")
+        raise ValueError("crossfadevideos: 拼接图片类型不一致\nImageType Mismatch")
     if video1[[0],].shape != video2[[0],].shape:
-        raise ValueError("corssfadevideos: 拼接图片尺寸不一致\nImageSize Mismatch")
+        raise ValueError("crossfadevideos: 拼接图片尺寸不一致\nImageSize Mismatch")
     if num_corssfade_frame > video1.shape[0] or num_corssfade_frame > video2.shape[0]:
-        raise ValueError("corssfadevideos: 拼接图片数目应大于过渡数目\nVideoLength should be longer than CrossLength")
+        raise ValueError("crossfadevideos: 拼接图片数目应大于过渡数目\nVideoLength should be longer than CrossLength")
     video_slice1 = video1[:-num_corssfade_frame]
     video_slice2 = video1[-num_corssfade_frame:]
     video_slice3 = video2[:num_corssfade_frame]
@@ -167,7 +168,7 @@ def corssfadevideos(video1, video2, num_corssfade_frame):
     return result
 
 def vace_sample(model, positive, negative, vae, width, height, length, strength, seed, cfg, sampler_name, scheduler, steps, denoise, video,
-                control_video=None, control_masks=None, reference_image=None):
+                control_video=None, control_masks=None, reference_image=None, tile_control_video=None):
     # from comfyui
     latent_length = ((length - 1) // 4) + 1
     if control_video is not None:
@@ -377,10 +378,10 @@ QQ群：948626609
         index = 0
         while index < len(upscaled_videos_list):
             cross_fade = temporalist[index + 1]['num_crossfade']
-            result_video = corssfadevideos(result_video, upscaled_videos_list[index], cross_fade)
+            result_video = crossfadevideos(result_video, upscaled_videos_list[index], cross_fade)
             index += 1
         if loopback_crossfade > 0:
-            crossed_start = corssfadevideos(result_video[-loopback_crossfade:], result_video[:loopback_crossfade], loopback_crossfade)
+            crossed_start = crossfadevideos(result_video[-loopback_crossfade:], result_video[:loopback_crossfade], loopback_crossfade)
             result_video[:loopback_crossfade] = crossed_start
             result_video = result_video[:(total_frame - loopback_crossfade)]
         return (result_video, )
@@ -532,13 +533,299 @@ class CustomCropArea:
             ]
         return (result,)
 
+class RegionalBatchPrompt:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "clip": (IO.CLIP, {"tooltip": "The CLIP model used for encoding the text."}),
+                "prompt_list": ("STRING", ),
+                "croparea_list": ("LIST", ),
+            }
+        }
+
+    RETURN_TYPES = ("LIST", )
+    RETURN_NAMES = ("croparea_list", )
+    FUNCTION = "func"
+    CATEGORY = "SuperUltimateVaceTools"
+    DESCRIPTION = "batch conditioning prompt list"
+    def func(self, clip, prompt_list, croparea_list):
+        if len(prompt_list) != len(croparea_list):
+            raise ValueError("提示词队列长度与切割队列长度不一致，检查节点连接是否正确\nLength of prompt_list is not same as croparea_list, check nodes connection")
+        index = 0
+        for prompt in prompt_list:
+            tokens = clip.tokenize(prompt)
+            croparea_list[index]['cond_p'] = clip.encode_from_tokens_scheduled(tokens)
+            index += 1
+
+        return (croparea_list, )
+
+# VaceLongVideo
+def sort_list(vace_control_list):
+    n = len(vace_control_list)
+    for i in range(n):
+        swapped = False
+        for j in range(0, n-i-1):
+            if vace_control_list[j]['frame_position'] > vace_control_list[j + 1]['frame_position']:
+                vace_control_list[j], vace_control_list[j + 1] = vace_control_list[j + 1], vace_control_list[j]
+                swapped = True
+        if not swapped:
+            break
+    return vace_control_list
+
+def check_overlap(vace_control_list):
+    n = len(vace_control_list)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if vace_control_list[i]['frame_position'] == vace_control_list[j]['frame_position']:
+                raise ValueError("控制帧位置重复，检查控制帧位置设置\nidentical frame_position detected, check the frame_position setting")
+            elif vace_control_list[j]['frame_position'] <= vace_control_list[i]['control_end_index'] and vace_control_list[j]['control_end_index'] >= vace_control_list[i]['frame_position']:
+                raise ValueError("控制帧区域重叠，检查控制帧位置设置\nsome control frames overlapped, check the frame_position setting")
+    return None
+
+class VaceLongVideo:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "model": ("MODEL", {"tooltip": "Only VACE models are supported"}),
+                "vae": ("VAE", ),
+                "width": ("INT", {"default": 832, "min": 16, "max": nodes.MAX_RESOLUTION, "step": 16}),
+                "height": ("INT", {"default": 480, "min": 16, "max": nodes.MAX_RESOLUTION, "step": 16}),
+                "loopback_crossfade": ("INT", {"default": 0, "min": 0, "max": 10000, "step": 1}),
+                "vace_prompt_list": ("PROMPTLIST", ),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True, }),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 10000, }),
+                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step":0.1, "round": 0.01, }),
+                "sampler_name": (comfy.samplers.KSampler.SAMPLERS, ),
+                "scheduler": (comfy.samplers.KSampler.SCHEDULERS, ),
+                "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01, }),
+            },
+            "optional": {
+                "vace_control_list": ("CONTROLIMAGELIST", ),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE", )
+    OUTPUT_TOOLTIPS = ("Generated Video",)
+    FUNCTION = "long_video"
+
+    CATEGORY = "SuperUltimateVaceTools"
+    DESCRIPTION = """
+VACE长视频拼接|Long video by concating multiple parts
+by bbaudio
+联系方式
+QQ：1953761458
+Email：1953761458@qq.com
+QQ群：948626609
+"""
+    def long_video(self, model, width, height, loopback_crossfade, vace_prompt_list, seed, steps, cfg, sampler_name, scheduler, 
+                   denoise, vae, vace_control_list=None):
+        # check prompt list
+        if len(vace_prompt_list) == 1:
+            vace_prompt_list[0]['init_crossfade_frame'] = 0
+        # get total frame
+        total_frame = 0
+        for item in vace_prompt_list:
+            num_frame = item['num_frame']
+            init_crossfade_frame = item['init_crossfade_frame']
+            total_frame += num_frame - init_crossfade_frame
+            if loopback_crossfade > num_frame:
+                raise ValueError("循环过渡帧数目不能超过生成长度\nloopback_crossfade can not be larger than length of generation")
+        # deal with control list
+        control_video = torch.full((total_frame, height, width, 3), 0.5, device='cpu')
+        control_mask = torch.full((total_frame, height, width), 1.0, device='cpu')
+        if vace_control_list is not None:
+            check_overlap(vace_control_list)
+            vace_control_list = sort_list(vace_control_list)
+            index_final = vace_control_list[-1]['control_end_index']
+            if index_final >= total_frame:
+                raise ValueError("控制帧长度超过生成长度\nLength of control image exceeds length of generation")
+            for item in vace_control_list:
+                index_start = item['frame_position']
+                index_end = item['control_end_index']
+                control_images = comfy.utils.common_upscale(item['control_image'].movedim(-1, 1), width, height, "bilinear", "center").movedim(1, -1)
+                control_images = repeat_tensor(control_images, item['repeat'])
+                control_video[index_start:index_end + 1] = control_images[:index_end + 1 - index_start]
+                if item['masked'] is True:
+                    control_mask[index_start:min(index_end + 1, total_frame)] = torch.full((index_end + 1 - index_start, height, width), 0.0, device='cpu')
+        # deal with prompt list
+        sampled = []
+        debug_control = []
+        debug_mask = []
+        vace_prompt_list[-1]['flag_end'] = True
+        processed_frame_count = 0
+        for item in vace_prompt_list:
+            num_frame = item['num_frame']
+            cond_p = item['cond_p']
+            cond_n = item['cond_n']
+            init_crossfade_frame = item['init_crossfade_frame']
+            ref_image = item['ref_image']
+            # control
+            if processed_frame_count == 0:
+                controls = control_video[:num_frame].clone()
+                mask_ctl = control_mask[:num_frame].clone()
+            else:
+                controls = control_video[processed_frame_count - init_crossfade_frame:processed_frame_count - init_crossfade_frame + num_frame].clone()
+                mask_ctl = control_mask[processed_frame_count - init_crossfade_frame:processed_frame_count - init_crossfade_frame + num_frame].clone()
+                controls[:init_crossfade_frame] = sampled[-1][-init_crossfade_frame:]
+                mask_ctl[:init_crossfade_frame] = torch.full((init_crossfade_frame, height, width), 0.0, device='cpu')
+            if item['flag_end'] is True and loopback_crossfade > 0:
+                controls[-loopback_crossfade:] = sampled[0][:loopback_crossfade].clone()
+                mask_ctl[-loopback_crossfade:] = torch.full((loopback_crossfade, height, width), 0.0, device='cpu')
+            empty_video = torch.zeros([num_frame, height, width, 3])
+            sample_result = vace_sample(model, cond_p, cond_n, vae, width, height, num_frame, 1, seed, cfg, sampler_name, scheduler, steps, denoise, empty_video,
+                    controls, mask_ctl, ref_image)
+            processed_frame_count += num_frame - init_crossfade_frame
+            sampled.append(sample_result)
+        result_video = sampled.pop(0)
+        index = 0
+        while index < len(sampled):
+            cross_fade = vace_prompt_list[index + 1]['init_crossfade_frame']
+            result_video = crossfadevideos(result_video, sampled[index], cross_fade)
+            index += 1
+        if loopback_crossfade > 0:
+            crossed_start = crossfadevideos(result_video[-loopback_crossfade:], result_video[:loopback_crossfade], loopback_crossfade)
+            result_video[:loopback_crossfade] = crossed_start
+            result_video = result_video[:(total_frame - loopback_crossfade)]
+        return (result_video, debug_control, debug_mask, control_video)
+
+class VACEControlImageCombine:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "control_image": ("IMAGE", ),
+                "frame_position": ("INT", {"default": 0, "min": 0, "max": 65535, "step": 1}),
+                "masked": ("BOOLEAN", {"default": False}),
+                "repeat": ("INT", {"default": 1, "min": 1, "max": 65535, "step": 1}),
+            },
+            "optional": {
+                "previous_control": ("CONTROLIMAGELIST", ),
+            }
+        }
+
+    RETURN_TYPES = ("CONTROLIMAGELIST", )
+    RETURN_NAMES = ("vace_control_list", )
+    FUNCTION = "combine_controls"
+
+    CATEGORY = "SuperUltimateVaceTools"
+    DESCRIPTION = ""
+    def combine_controls(self, control_image, frame_position, masked, repeat, previous_control=None):
+        control_list = []
+        if previous_control is not None:
+            control_list.extend(previous_control)
+        control_end_index = frame_position + control_image.shape[0] - 1 + (repeat - 1)
+        control_list.append({
+            'frame_position': frame_position,
+            'control_end_index': control_end_index,
+            'control_image': control_image,
+            'masked': masked,
+            'repeat': repeat,
+        })
+        return (control_list, )
+
+class WanCrossAttentionPatch:
+    # from KJNODES
+    def __init__(self, context, nag_scale, nag_alpha, nag_tau, i2v=False):
+        self.nag_context = context
+        self.nag_scale = nag_scale
+        self.nag_alpha = nag_alpha
+        self.nag_tau = nag_tau
+        self.i2v = i2v
+    def __get__(self, obj, objtype=None):
+        # Create bound method with stored parameters
+        def wrapped_attention(self_module, *args, **kwargs):
+            self_module.nag_context = self.nag_context
+            self_module.nag_scale = self.nag_scale
+            self_module.nag_alpha = self.nag_alpha
+            self_module.nag_tau = self.nag_tau
+            if self.i2v:
+                return wan_i2v_crossattn_forward_nag(self_module, *args, **kwargs)
+            else:
+                return wan_crossattn_forward_nag(self_module, *args, **kwargs)
+        return types.MethodType(wrapped_attention, obj)
+
+class VACEPromptCombine:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "clip": (IO.CLIP, {"tooltip": "The CLIP model used for encoding the text."}),
+                "positive_prompt": ("STRING", {"default": "", "multiline": True}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "num_frame": ("INT", {"default": 81, "min": 5, "max": 65535, "step": 4}),
+                "init_crossfade_frame": ("INT", {"default": 3, "min": 0, "max": 65535, "step": 1}),
+            },
+            "optional": {
+                "ref_image": ("IMAGE", ),
+                "previous_prompt": ("PROMPTLIST", ),
+            }
+        }
+
+    RETURN_TYPES = ("PROMPTLIST", )
+    RETURN_NAMES = ("vace_prompt_list", )
+    FUNCTION = "combine_prompt"
+
+    CATEGORY = "SuperUltimateVaceTools"
+    DESCRIPTION = ""
+    def combine_prompt(self, clip, positive_prompt, negative_prompt, num_frame, init_crossfade_frame, ref_image=None, previous_prompt=None):
+        if init_crossfade_frame > num_frame:
+            raise ValueError("过渡帧数目不能大于总帧数\ninit_crossfade_frame can not be larger than num_frame")
+        prompt_list = []
+        if previous_prompt is not None:
+            prompt_list.extend(previous_prompt)
+        p_tokens = clip.tokenize(positive_prompt)
+        n_tokens = clip.tokenize(negative_prompt)
+        cond_p =  clip.encode_from_tokens_scheduled(p_tokens)
+        cond_n = clip.encode_from_tokens_scheduled(n_tokens)
+        prompt_list.append({
+            'cond_p': cond_p,
+            'cond_n': cond_n,
+            'num_frame': num_frame,
+            'init_crossfade_frame': init_crossfade_frame,
+            'ref_image': ref_image,
+            "flag_end": False
+        })
+        return (prompt_list, )
+
+class VACEPromptCheckTotalFrame:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "prompt_list": ("PROMPTLIST", ),
+            },
+        }
+
+    RETURN_TYPES = ("INT", )
+    RETURN_NAMES = ("total_frame", )
+    FUNCTION = "check_total_frame"
+
+    CATEGORY = "SuperUltimateVaceTools"
+    DESCRIPTION = ""
+    def check_total_frame(self, prompt_list):
+        total_frame = 0
+        for item in prompt_list:
+            total_frame += item['num_frame'] - item['init_crossfade_frame']
+        return (total_frame, )
 
 NODE_CLASS_MAPPINGS = {
     "SuperUltimateVACEUpscale": UltimateVideoUpscaler,
-    "CustomCropArea": CustomCropArea
+    "CustomCropArea": CustomCropArea,
+    "RegionalBatchPrompt": RegionalBatchPrompt,
+    "VACEControlImageCombine": VACEControlImageCombine,
+    "VACEPromptCombine": VACEPromptCombine,
+    "VaceLongVideo": VaceLongVideo,
+    "VACEPromptCheckTotalFrame": VACEPromptCheckTotalFrame,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "SuperUltimateVACEUpscale": "SuperUltimate VACE Upscale",
-    "CustomCropArea": "Custom Crop Area"
+    "CustomCropArea": "Custom Crop Area",
+    "RegionalBatchPrompt": "Batch Prompt Crop Area",
+    "VACEControlImageCombine": "VACE Control Image Combine",
+    "VACEPromptCombine": "VACE Prompt Combine",
+    "VaceLongVideo": "SuperUltimate VACE Long Video",
+    "VACEPromptCheckTotalFrame": "Check Total Frame",
 }

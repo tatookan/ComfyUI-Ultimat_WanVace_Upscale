@@ -4,7 +4,8 @@ SuperUltimateVaceTools, some Comfyui custom nodes for wan2.1 VACE, attempt to im
 包含以下插件：  
 Including following nodes:  
 
-- 超究视频放大 | SuperUltimateVaceUpscale 
+- 超究视频放大 | Super Ultimate Vace Upscale
+- 超究长视频 | Super Ultimate VACE Long Video
 - 更多功能待添加 | pending to add more...
 
 ## SuperUltimateVaceUpscale

@@ -518,9 +518,9 @@ class CustomCropArea:
                 },
                 {
                 'width_crop': width_upscale,
-                'height_crop': height_upscale - (3 * h - 3 * pad),
+                'height_crop': height_upscale - (3 * h - 3 * pad) - (height_upscale - 3 * h + 3 * pad)%16 + 16,
                 'offset_x': 0,
-                'offset_y': 3 * h - 3 * pad,
+                'offset_y': 3 * h - 3 * pad + (height_upscale - 3 * h + 3 * pad)%16 - 16,
                 'mask_left': 0,
                 'mask_right': 0,
                 'mask_top': pad,

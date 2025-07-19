@@ -6,6 +6,7 @@ import nodes
 import node_helpers
 import latent_preview
 from comfy.comfy_types import IO
+from comfy.utils import common_upscale
 
 def emptyimage(width, height, batch_size=1, color=(0,0,0)):
     r = torch.full([batch_size, height, width, 1], color[0] / 255, dtype=torch.float32, device="cpu")
@@ -646,9 +647,15 @@ QQ群：948626609
                 index_end = item['control_end_index']
                 control_images = comfy.utils.common_upscale(item['control_image'].movedim(-1, 1), width, height, "bilinear", "center").movedim(1, -1)
                 control_images = repeat_tensor(control_images, item['repeat'])
+                custom_mask = item['custom_mask']
+                if custom_mask is not None:
+                    if custom_mask.shape[1] != height or custom_mask.shape[2] != width:
+                        custom_mask = common_upscale(custom_mask.unsqueeze(1), width, height, "nearest-exact").squeeze(1)
                 control_video[index_start:index_end + 1] = control_images[:index_end + 1 - index_start]
-                if item['masked'] is True:
-                    control_mask[index_start:min(index_end + 1, total_frame)] = torch.full((index_end + 1 - index_start, height, width), 0.0, device='cpu')
+                if custom_mask is None and item['masked'] is True :
+                    control_mask[index_start:index_end + 1] = torch.full((index_end + 1 - index_start, height, width), 0.0, device='cpu')
+                elif custom_mask is not None and item['masked'] is True :
+                    control_mask[index_start:index_end + 1] = custom_mask
         # deal with prompt list
         sampled = []
         debug_control = []
@@ -701,6 +708,7 @@ class VACEControlImageCombine:
                 "repeat": ("INT", {"default": 1, "min": 1, "max": 65535, "step": 1}),
             },
             "optional": {
+                "custom_mask": ("MASK", ),
                 "previous_control": ("CONTROLIMAGELIST", ),
             }
         }
@@ -711,7 +719,7 @@ class VACEControlImageCombine:
 
     CATEGORY = "SuperUltimateVaceTools"
     DESCRIPTION = ""
-    def combine_controls(self, control_image, frame_position, masked, repeat, previous_control=None):
+    def combine_controls(self, control_image, frame_position, masked, repeat, custom_mask=None, previous_control=None):
         control_list = []
         if previous_control is not None:
             control_list.extend(previous_control)
@@ -720,31 +728,11 @@ class VACEControlImageCombine:
             'frame_position': frame_position,
             'control_end_index': control_end_index,
             'control_image': control_image,
+            'custom_mask': custom_mask,
             'masked': masked,
             'repeat': repeat,
         })
         return (control_list, )
-
-class WanCrossAttentionPatch:
-    # from KJNODES
-    def __init__(self, context, nag_scale, nag_alpha, nag_tau, i2v=False):
-        self.nag_context = context
-        self.nag_scale = nag_scale
-        self.nag_alpha = nag_alpha
-        self.nag_tau = nag_tau
-        self.i2v = i2v
-    def __get__(self, obj, objtype=None):
-        # Create bound method with stored parameters
-        def wrapped_attention(self_module, *args, **kwargs):
-            self_module.nag_context = self.nag_context
-            self_module.nag_scale = self.nag_scale
-            self_module.nag_alpha = self.nag_alpha
-            self_module.nag_tau = self.nag_tau
-            if self.i2v:
-                return wan_i2v_crossattn_forward_nag(self_module, *args, **kwargs)
-            else:
-                return wan_crossattn_forward_nag(self_module, *args, **kwargs)
-        return types.MethodType(wrapped_attention, obj)
 
 class VACEPromptCombine:
     @classmethod

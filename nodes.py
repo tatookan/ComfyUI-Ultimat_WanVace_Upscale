@@ -658,8 +658,6 @@ QQ群：948626609
                     control_mask[index_start:index_end + 1] = custom_mask
         # deal with prompt list
         sampled = []
-        debug_control = []
-        debug_mask = []
         vace_prompt_list[-1]['flag_end'] = True
         processed_frame_count = 0
         for item in vace_prompt_list:
@@ -667,6 +665,7 @@ QQ群：948626609
             cond_p = item['cond_p']
             cond_n = item['cond_n']
             init_crossfade_frame = item['init_crossfade_frame']
+            refine_init = item['refine_init']
             ref_image = item['ref_image']
             # control
             if processed_frame_count == 0:
@@ -675,8 +674,12 @@ QQ群：948626609
             else:
                 controls = control_video[processed_frame_count - init_crossfade_frame:processed_frame_count - init_crossfade_frame + num_frame].clone()
                 mask_ctl = control_mask[processed_frame_count - init_crossfade_frame:processed_frame_count - init_crossfade_frame + num_frame].clone()
-                controls[:init_crossfade_frame] = sampled[-1][-init_crossfade_frame:]
-                mask_ctl[:init_crossfade_frame] = torch.full((init_crossfade_frame, height, width), 0.0, device='cpu')
+                controls[:init_crossfade_frame] = sampled[-1][-init_crossfade_frame:] * (1 - refine_init) + torch.full((init_crossfade_frame, height, width, 3), refine_init, device='cpu')
+                if refine_init < 0.01:
+                    mask_ctl[:init_crossfade_frame] = torch.full((init_crossfade_frame, height, width), 0.0, device='cpu')
+                else:
+                    mask_ctl[0] = torch.full((1, height, width), 0.0, device='cpu')
+                    mask_ctl[1:init_crossfade_frame] = torch.full((init_crossfade_frame - 1, height, width), 1.0, device='cpu')
             if item['flag_end'] is True and loopback_crossfade > 0:
                 controls[-loopback_crossfade:] = sampled[0][:loopback_crossfade].clone()
                 mask_ctl[-loopback_crossfade:] = torch.full((loopback_crossfade, height, width), 0.0, device='cpu')
@@ -695,7 +698,7 @@ QQ群：948626609
             crossed_start = crossfadevideos(result_video[-loopback_crossfade:], result_video[:loopback_crossfade], loopback_crossfade)
             result_video[:loopback_crossfade] = crossed_start
             result_video = result_video[:(total_frame - loopback_crossfade)]
-        return (result_video, debug_control, debug_mask, control_video)
+        return (result_video, )
 
 class VACEControlImageCombine:
     @classmethod
@@ -744,6 +747,7 @@ class VACEPromptCombine:
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
                 "num_frame": ("INT", {"default": 81, "min": 5, "max": 65535, "step": 4}),
                 "init_crossfade_frame": ("INT", {"default": 3, "min": 0, "max": 65535, "step": 1}),
+                "refine_init": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             },
             "optional": {
                 "ref_image": ("IMAGE", ),
@@ -757,7 +761,7 @@ class VACEPromptCombine:
 
     CATEGORY = "SuperUltimateVaceTools"
     DESCRIPTION = ""
-    def combine_prompt(self, clip, positive_prompt, negative_prompt, num_frame, init_crossfade_frame, ref_image=None, previous_prompt=None):
+    def combine_prompt(self, clip, positive_prompt, negative_prompt, num_frame, init_crossfade_frame, refine_init, ref_image=None, previous_prompt=None):
         if init_crossfade_frame > num_frame:
             raise ValueError("过渡帧数目不能大于总帧数\ninit_crossfade_frame can not be larger than num_frame")
         prompt_list = []
@@ -772,6 +776,7 @@ class VACEPromptCombine:
             'cond_n': cond_n,
             'num_frame': num_frame,
             'init_crossfade_frame': init_crossfade_frame,
+            'refine_init': refine_init,
             'ref_image': ref_image,
             "flag_end": False
         })

@@ -8,7 +8,7 @@ Including following nodes:
 - 超究长视频 | Super Ultimate VACE Long Video
 - 更多功能待添加 | pending to add more...
 
-## SuperUltimateVaceUpscale
+## 1. SuperUltimateVaceUpscale
 对视频进行分割放大，支持空间分割以及时间分割。  
 Upscale video by splitting it into tiled areas, supports spatial tiling and temporal tiling.  
 
@@ -34,7 +34,7 @@ To get more controlable result, it is recommended to use reference image and con
 After using the reference image, enabling 'crop-ref' will divide the reference image according to the video segmentation plan, and use the segmented reference image for the region reference when denoising each segmented part. If enable 'ref_as_init_frame', the first frame of the video will be directly replaced with the reference image, and this will be used as a reference to guide the following frames denoising of each region.   
 For control video, VACE supports many control methods, and you can freely try the differences brought by different control methods.
 
-## SuperUltimateVaceLongVideo
+## 2. SuperUltimateVaceLongVideo
 利用VACE拼接功能生成长视频，支持多种控制手段，自动修复过渡帧，缓解多轮接续生成带来的视频质量劣化  
 Generate long length videos with the feature 'temporal extension' of VACE. Support many control methods, automatically refine the crossfade frames, mitigating the quality downgrade from multiple extensions.
 

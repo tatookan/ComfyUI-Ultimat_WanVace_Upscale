@@ -1,8 +1,8 @@
 {
   "id": "4db3b883-4480-4726-8285-2b0c6bd129a5",
   "revision": 0,
-  "last_node_id": 126,
-  "last_link_id": 322,
+  "last_node_id": 127,
+  "last_link_id": 330,
   "nodes": [
     {
       "id": 15,
@@ -24,7 +24,7 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            45
+            324
           ]
         }
       ],
@@ -392,7 +392,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            182
+            323
           ]
         }
       ],
@@ -404,42 +404,6 @@
       "widgets_values": [
         8.000000000000002
       ]
-    },
-    {
-      "id": 100,
-      "type": "Reroute",
-      "pos": [
-        530,
-        710
-      ],
-      "size": [
-        75,
-        26
-      ],
-      "flags": {},
-      "order": 31,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "",
-          "type": "*",
-          "link": 309
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "PROMPTLIST",
-          "links": [
-            255,
-            306
-          ]
-        }
-      ],
-      "properties": {
-        "showOutputText": false,
-        "horizontal": false
-      }
     },
     {
       "id": 116,
@@ -528,94 +492,6 @@
       ]
     },
     {
-      "id": 40,
-      "type": "VaceLongVideo",
-      "pos": [
-        700,
-        -170
-      ],
-      "size": [
-        310,
-        515.3076782226562
-      ],
-      "flags": {},
-      "order": 33,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 182
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 45
-        },
-        {
-          "name": "vace_prompt_list",
-          "type": "PROMPTLIST",
-          "link": 306
-        },
-        {
-          "name": "vace_control_list",
-          "shape": 7,
-          "type": "CONTROLIMAGELIST",
-          "link": 202
-        },
-        {
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": 64
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            233
-          ]
-        },
-        {
-          "name": "LIST",
-          "type": "LIST",
-          "links": []
-        },
-        {
-          "name": "LIST",
-          "type": "LIST",
-          "links": []
-        },
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": []
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-SuperUltimateVaceTools",
-        "ver": "05a708fa28f5bd061231c7b9d252dd2983d68c96",
-        "Node name for S&R": "VaceLongVideo"
-      },
-      "widgets_values": [
-        832,
-        480,
-        0,
-        881439509780701,
-        "fixed",
-        5,
-        1,
-        "sa_solver",
-        "simple",
-        1,
-        ""
-      ]
-    },
-    {
       "id": 113,
       "type": "CustomRefineOption",
       "pos": [
@@ -651,104 +527,6 @@
         "0.2, 0.2, 0.2, 0.2, 0.2",
         "0.8, 1.0, 1.0",
         "1.0, 0.8, 0.6, 0.4, 0.2"
-      ]
-    },
-    {
-      "id": 48,
-      "type": "Seed (rgthree)",
-      "pos": [
-        460,
-        -10
-      ],
-      "size": [
-        210,
-        130
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "dir": 4,
-          "name": "SEED",
-          "shape": 3,
-          "type": "INT",
-          "links": [
-            64
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "rgthree-comfy",
-        "ver": "5dc53323e07a021038af9f2a4a06ebc071f7218c"
-      },
-      "widgets_values": [
-        487125006229186,
-        "",
-        "",
-        ""
-      ]
-    },
-    {
-      "id": 90,
-      "type": "VACEPromptCombine",
-      "pos": [
-        190,
-        290
-      ],
-      "size": [
-        225.087890625,
-        274
-      ],
-      "flags": {},
-      "order": 21,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 216
-        },
-        {
-          "name": "ref_image",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": 217
-        },
-        {
-          "name": "custom_refine",
-          "shape": 7,
-          "type": "REFINELIST",
-          "link": 293
-        },
-        {
-          "name": "previous_prompt",
-          "shape": 7,
-          "type": "PROMPTLIST",
-          "link": 218
-        }
-      ],
-      "outputs": [
-        {
-          "name": "vace_prompt_list",
-          "type": "PROMPTLIST",
-          "links": [
-            222
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-SuperUltimateVaceTools",
-        "ver": "48faf262ec77ef8867221223aa649aa2707bfb30",
-        "Node name for S&R": "VACEPromptCombine"
-      },
-      "widgets_values": [
-        "selfie video of a blond elf office lady with large breasts is walking in the office.",
-        "",
-        81,
-        5,
-        0.20000000000000004
       ]
     },
     {
@@ -1187,7 +965,7 @@
           "name": "vace_control_list",
           "type": "CONTROLIMAGELIST",
           "links": [
-            202
+            326
           ]
         }
       ],
@@ -1214,7 +992,7 @@
         88
       ],
       "flags": {},
-      "order": 9,
+      "order": 8,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1224,67 +1002,6 @@
       ],
       "color": "#432",
       "bgcolor": "#653"
-    },
-    {
-      "id": 88,
-      "type": "VACEPromptCombine",
-      "pos": [
-        190,
-        -80
-      ],
-      "size": [
-        225.087890625,
-        274
-      ],
-      "flags": {},
-      "order": 18,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 204
-        },
-        {
-          "name": "ref_image",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": 205
-        },
-        {
-          "name": "custom_refine",
-          "shape": 7,
-          "type": "REFINELIST",
-          "link": null
-        },
-        {
-          "name": "previous_prompt",
-          "shape": 7,
-          "type": "PROMPTLIST",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "vace_prompt_list",
-          "type": "PROMPTLIST",
-          "links": [
-            218
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-SuperUltimateVaceTools",
-        "ver": "48faf262ec77ef8867221223aa649aa2707bfb30",
-        "Node name for S&R": "VACEPromptCombine"
-      },
-      "widgets_values": [
-        "selfie video of a blond elf office lady with large breasts is walking in the office.",
-        "",
-        81,
-        0,
-        0
-      ]
     },
     {
       "id": 91,
@@ -1359,7 +1076,7 @@
         100
       ],
       "flags": {},
-      "order": 10,
+      "order": 9,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1411,29 +1128,6 @@
       "bgcolor": "#335"
     },
     {
-      "id": 117,
-      "type": "Note",
-      "pos": [
-        -510,
-        180
-      ],
-      "size": [
-        280,
-        110
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "You can add extra control with 'VACE Control Image Combine', control input could be keyframe (should set 'masked' true), pose video, depth image, lineart image...VACE support various control methods."
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
       "id": 122,
       "type": "Note",
       "pos": [
@@ -1445,7 +1139,7 @@
         110
       ],
       "flags": {},
-      "order": 12,
+      "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1468,7 +1162,7 @@
         110
       ],
       "flags": {},
-      "order": 13,
+      "order": 11,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1480,10 +1174,166 @@
       "bgcolor": "#653"
     },
     {
+      "id": 119,
+      "type": "Note",
+      "pos": [
+        440,
+        540
+      ],
+      "size": [
+        280,
+        100
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "If no 'custom_refine' is connected, init frames will be refined by the value of 'refine_init', else the value of 'refine_init' will be overwright by 'custom_refine'"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 125,
+      "type": "Note",
+      "pos": [
+        1027.4520263671875,
+        72.5230712890625
+      ],
+      "size": [
+        280,
+        100
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "I love 'sa_solver' and it seems better than unpic. If your ksampler does not have it, please update comfyui, or change to unipc or any other sampler."
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 127,
+      "type": "VaceLongVideo",
+      "pos": [
+        700,
+        -170
+      ],
+      "size": [
+        304.0552673339844,
+        511.8780517578125
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 323
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 324
+        },
+        {
+          "name": "vace_prompt_list",
+          "type": "PROMPTLIST",
+          "link": 330
+        },
+        {
+          "name": "vace_control_list",
+          "shape": 7,
+          "type": "CONTROLIMAGELIST",
+          "link": 326
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": 327
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            328
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-SuperUltimateVaceTools",
+        "ver": "8067f227c40c3b9a19efdaae244509b158c9cf69",
+        "Node name for S&R": "VaceLongVideo"
+      },
+      "widgets_values": [
+        832,
+        480,
+        0,
+        71914810489251,
+        "randomize",
+        5,
+        1,
+        "sa_solver",
+        "simple",
+        1,
+        ""
+      ]
+    },
+    {
+      "id": 48,
+      "type": "Seed (rgthree)",
+      "pos": [
+        460,
+        -10
+      ],
+      "size": [
+        210,
+        130
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "dir": 4,
+          "name": "SEED",
+          "shape": 3,
+          "type": "INT",
+          "links": [
+            327
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "rgthree-comfy",
+        "ver": "5dc53323e07a021038af9f2a4a06ebc071f7218c"
+      },
+      "widgets_values": [
+        487125006229186,
+        "",
+        "",
+        ""
+      ]
+    },
+    {
       "id": 81,
       "type": "VHS_VideoCombine",
       "pos": [
-        1590,
+        1500,
         -170
       ],
       "size": [
@@ -1497,7 +1347,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 233
+          "link": 328
         },
         {
           "name": "audio",
@@ -1533,7 +1383,7 @@
       "widgets_values": {
         "frame_rate": 15,
         "loop_count": 0,
-        "filename_prefix": "VACE",
+        "filename_prefix": "bbaudio/SuperUltimateVACELongVideo",
         "format": "video/h264-mp4",
         "pix_fmt": "yuv420p",
         "crf": 19,
@@ -1545,50 +1395,27 @@
           "hidden": false,
           "paused": false,
           "params": {
-            "filename": "VACE_00008.mp4",
+            "filename": "VACE_00002.mp4",
             "subfolder": "",
             "type": "temp",
             "format": "video/h264-mp4",
-            "frame_rate": 30,
-            "workflow": "VACE_00008.png",
-            "fullpath": "D:\\AI\\ComfyUI_windows_portable\\ComfyUI\\temp\\VACE_00008.mp4"
+            "frame_rate": 15,
+            "workflow": "VACE_00002.png",
+            "fullpath": "D:\\AI\\ComfyUI_windows_portable\\ComfyUI\\temp\\VACE_00002.mp4"
           }
         }
       }
     },
     {
-      "id": 119,
+      "id": 117,
       "type": "Note",
       "pos": [
-        440,
-        540
+        -510,
+        180
       ],
       "size": [
         280,
-        100
-      ],
-      "flags": {},
-      "order": 14,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "If no 'custom_refine' is connected, init frames will be refined by the value of 'refine_init', else the value of 'refine_init' will be overwright by 'custom_refine'"
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 125,
-      "type": "Note",
-      "pos": [
-        1027.4520263671875,
-        72.5230712890625
-      ],
-      "size": [
-        280,
-        100
+        110
       ],
       "flags": {},
       "order": 15,
@@ -1597,21 +1424,171 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "I love 'sa_solver' and it seems better than unpic. If your ksampler does not have it, please update comfyui, or change to unipc or any other sampler."
+        "You can add extra control with 'VACE Control Image Combine', control input could be keyframe (should set 'masked' true), pose video, depth image, lineart image...VACE models support various control methods."
       ],
       "color": "#432",
       "bgcolor": "#653"
+    },
+    {
+      "id": 100,
+      "type": "Reroute",
+      "pos": [
+        530,
+        710
+      ],
+      "size": [
+        75,
+        26
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 309
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "PROMPTLIST",
+          "links": [
+            255,
+            330
+          ]
+        }
+      ],
+      "properties": {
+        "showOutputText": false,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 88,
+      "type": "VACEPromptCombine",
+      "pos": [
+        190,
+        -80
+      ],
+      "size": [
+        225.087890625,
+        274
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 204
+        },
+        {
+          "name": "ref_image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 205
+        },
+        {
+          "name": "custom_refine",
+          "shape": 7,
+          "type": "REFINELIST",
+          "link": null
+        },
+        {
+          "name": "previous_prompt",
+          "shape": 7,
+          "type": "PROMPTLIST",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "vace_prompt_list",
+          "type": "PROMPTLIST",
+          "links": [
+            218
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-SuperUltimateVaceTools",
+        "ver": "48faf262ec77ef8867221223aa649aa2707bfb30",
+        "Node name for S&R": "VACEPromptCombine"
+      },
+      "widgets_values": [
+        "selfie video of a blond elf office lady with large breasts is walking in the office.",
+        "",
+        81,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 90,
+      "type": "VACEPromptCombine",
+      "pos": [
+        190,
+        290
+      ],
+      "size": [
+        225.087890625,
+        274
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 216
+        },
+        {
+          "name": "ref_image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 217
+        },
+        {
+          "name": "custom_refine",
+          "shape": 7,
+          "type": "REFINELIST",
+          "link": 293
+        },
+        {
+          "name": "previous_prompt",
+          "shape": 7,
+          "type": "PROMPTLIST",
+          "link": 218
+        }
+      ],
+      "outputs": [
+        {
+          "name": "vace_prompt_list",
+          "type": "PROMPTLIST",
+          "links": [
+            222
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-SuperUltimateVaceTools",
+        "ver": "48faf262ec77ef8867221223aa649aa2707bfb30",
+        "Node name for S&R": "VACEPromptCombine"
+      },
+      "widgets_values": [
+        "selfie video of a blond elf office lady with large breasts is walking in the office.",
+        "",
+        81,
+        5,
+        0.20000000000000004
+      ]
     }
   ],
   "links": [
-    [
-      45,
-      15,
-      0,
-      40,
-      1,
-      "VAE"
-    ],
     [
       52,
       13,
@@ -1619,14 +1596,6 @@
       43,
       0,
       "MODEL"
-    ],
-    [
-      64,
-      48,
-      0,
-      40,
-      4,
-      "INT"
     ],
     [
       134,
@@ -1645,28 +1614,12 @@
       "MODEL"
     ],
     [
-      182,
-      80,
-      0,
-      40,
-      0,
-      "MODEL"
-    ],
-    [
       201,
       6,
       0,
       2,
       0,
       "IMAGE"
-    ],
-    [
-      202,
-      2,
-      0,
-      40,
-      3,
-      "CONTROLIMAGELIST"
     ],
     [
       204,
@@ -1779,14 +1732,6 @@
       93,
       3,
       "PROMPTLIST"
-    ],
-    [
-      233,
-      40,
-      0,
-      81,
-      0,
-      "IMAGE"
     ],
     [
       236,
@@ -1925,14 +1870,6 @@
       "REFINELIST"
     ],
     [
-      306,
-      100,
-      0,
-      40,
-      2,
-      "PROMPTLIST"
-    ],
-    [
       309,
       99,
       0,
@@ -2003,16 +1940,64 @@
       79,
       0,
       "MODEL"
+    ],
+    [
+      323,
+      80,
+      0,
+      127,
+      0,
+      "MODEL"
+    ],
+    [
+      324,
+      15,
+      0,
+      127,
+      1,
+      "VAE"
+    ],
+    [
+      326,
+      2,
+      0,
+      127,
+      3,
+      "CONTROLIMAGELIST"
+    ],
+    [
+      327,
+      48,
+      0,
+      127,
+      4,
+      "INT"
+    ],
+    [
+      328,
+      127,
+      0,
+      81,
+      0,
+      "IMAGE"
+    ],
+    [
+      330,
+      100,
+      0,
+      127,
+      2,
+      "PROMPTLIST"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.693433494944164,
+      "scale": 0.43056764313426804,
       "offset": [
-        388.185829151573,
-        779.5686071225426
+        1885.860664299948,
+        977.8930685098563
       ]
     },
     "frontendVersion": "1.23.4",

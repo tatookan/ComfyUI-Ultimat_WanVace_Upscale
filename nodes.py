@@ -665,7 +665,9 @@ QQ群：948626609
             cond_p = item['cond_p']
             cond_n = item['cond_n']
             init_crossfade_frame = item['init_crossfade_frame']
-            refine_init = item['refine_init']
+            refine_percent_list = item['refine_percent_list']
+            mask_value_list = item['mask_value_list']
+            colormatch_strength_list = item['colormatch_strength_list']
             ref_image = item['ref_image']
             # control
             if processed_frame_count == 0:
@@ -675,17 +677,19 @@ QQ群：948626609
                 controls = control_video[processed_frame_count - init_crossfade_frame:processed_frame_count - init_crossfade_frame + num_frame].clone()
                 mask_ctl = control_mask[processed_frame_count - init_crossfade_frame:processed_frame_count - init_crossfade_frame + num_frame].clone()
                 controls[:init_crossfade_frame] = sampled[-1][-init_crossfade_frame:] * (1 - refine_init) + torch.full((init_crossfade_frame, height, width, 3), refine_init, device='cpu')
-                if refine_init < 0.01:
-                    mask_ctl[:init_crossfade_frame] = torch.full((init_crossfade_frame, height, width), 0.0, device='cpu')
-                else:
-                    mask_ctl[0] = torch.full((1, height, width), 0.0, device='cpu')
-                    mask_ctl[1:init_crossfade_frame] = torch.full((init_crossfade_frame - 1, height, width), 1.0, device='cpu')
+                for i in range(init_crossfade_frame):
+                    controls[[i],] = sampled[-1][[i-init_crossfade_frame],] * (1 - refine_percent_list[i]) + torch.full((1, height, width, 3), refine_percent_list[i], device='cpu')
+                    mask_ctl[[i],] = torch.full((1, height, width), mask_value_list[i], device='cpu')
             if item['flag_end'] is True and loopback_crossfade > 0:
                 controls[-loopback_crossfade:] = sampled[0][:loopback_crossfade].clone()
                 mask_ctl[-loopback_crossfade:] = torch.full((loopback_crossfade, height, width), 0.0, device='cpu')
             empty_video = torch.zeros([num_frame, height, width, 3])
             sample_result = vace_sample(model, cond_p, cond_n, vae, width, height, num_frame, 1, seed, cfg, sampler_name, scheduler, steps, denoise, empty_video,
                     controls, mask_ctl, ref_image)
+            if processed_frame_count > 0:
+                image_ref = sampled[-1][-1:]
+                for i in range(init_crossfade_frame):
+                    sample_result[[i],] = colormatch(image_ref, sample_result[[i],], strength=colormatch_strength_list[i])
             processed_frame_count += num_frame - init_crossfade_frame
             sampled.append(sample_result)
         result_video = sampled.pop(0)
@@ -751,6 +755,7 @@ class VACEPromptCombine:
             },
             "optional": {
                 "ref_image": ("IMAGE", ),
+                "custom_refine": ("REFINELIST", ),
                 "previous_prompt": ("PROMPTLIST", ),
             }
         }
@@ -761,10 +766,21 @@ class VACEPromptCombine:
 
     CATEGORY = "SuperUltimateVaceTools"
     DESCRIPTION = ""
-    def combine_prompt(self, clip, positive_prompt, negative_prompt, num_frame, init_crossfade_frame, refine_init, ref_image=None, previous_prompt=None):
+    def combine_prompt(self, clip, positive_prompt, negative_prompt, num_frame, init_crossfade_frame, refine_init, ref_image=None, custom_refine=None, previous_prompt=None):
         if init_crossfade_frame > num_frame:
             raise ValueError("过渡帧数目不能大于总帧数\ninit_crossfade_frame can not be larger than num_frame")
         prompt_list = []
+        if custom_refine is not None:
+            refine_percent_list = []
+            mask_value_list = []
+            colormatch_strength_list = []
+            for i in range(init_crossfade_frame):
+                refine_percent = custom_refine['refine_percent_list'][i] if len(custom_refine['refine_percent_list']) > i else 0.0
+                mask_value = custom_refine['mask_value_list'][i] if len(custom_refine['mask_value_list']) > i else 1.0
+                colormatch_strength = custom_refine['colormatch_strength_list'][i] if len(custom_refine['colormatch_strength_list']) > i else 0.0
+                refine_percent_list.append(refine_percent)
+                mask_value_list.append(mask_value)
+                colormatch_strength_list.append(colormatch_strength)
         if previous_prompt is not None:
             prompt_list.extend(previous_prompt)
         p_tokens = clip.tokenize(positive_prompt)
@@ -776,11 +792,53 @@ class VACEPromptCombine:
             'cond_n': cond_n,
             'num_frame': num_frame,
             'init_crossfade_frame': init_crossfade_frame,
+            'refine_percent_list': [refine_init] * init_crossfade_frame if custom_refine is None else refine_percent_list,
+            'mask_value_list': [1.0] * init_crossfade_frame if custom_refine is None else mask_value_list,
+            'colormatch_strength_list': [0.0] * init_crossfade_frame if custom_refine is None else colormatch_strength_list,
             'refine_init': refine_init,
             'ref_image': ref_image,
             "flag_end": False
         })
         return (prompt_list, )
+
+def str2float(input_list):
+    out = []
+    for item in input_list:
+        try:
+            out.append(float(item))
+        except :
+            pass
+    return out
+
+class CustomRefineOption:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "refine_percent_list": ("STRING", {"default": '0.2, 0.2, 0.2'}),
+                "mask_value_list": ("STRING", {"default": '1.0, 1.0, 1.0'}),
+                "colormatch_strength_list": ("STRING", {"default": '0.0, 0.0, 0.0'}),
+            },
+        }
+
+    RETURN_TYPES = ("REFINELIST", )
+    RETURN_NAMES = ("custom_refine_list", )
+    FUNCTION = "make_refine_list"
+
+    CATEGORY = "SuperUltimateVaceTools"
+    DESCRIPTION = ""
+    def make_refine_list(self, refine_percent_list, mask_value_list, colormatch_strength_list):
+        refine_percent = refine_percent_list.split(',')
+        mask_value = mask_value_list.split(',')
+        cm_strength = colormatch_strength_list.split(',')
+        refine_percent_list = str2float(refine_percent)
+        mask_value_list = str2float(mask_value)
+        colormatch_strength_list = str2float(cm_strength)
+        return ({
+            'refine_percent_list': refine_percent_list,
+            'mask_value_list': mask_value_list,
+            'colormatch_strength_list': colormatch_strength_list,
+        }, )
 
 class VACEPromptCheckTotalFrame:
     @classmethod
@@ -811,6 +869,7 @@ NODE_CLASS_MAPPINGS = {
     "VACEPromptCombine": VACEPromptCombine,
     "VaceLongVideo": VaceLongVideo,
     "VACEPromptCheckTotalFrame": VACEPromptCheckTotalFrame,
+    "CustomRefineOption": CustomRefineOption,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -821,4 +880,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "VACEPromptCombine": "VACE Prompt Combine",
     "VaceLongVideo": "SuperUltimate VACE Long Video",
     "VACEPromptCheckTotalFrame": "Check Total Frame",
+    "CustomRefineOption": "Custom Refine Option",
 }

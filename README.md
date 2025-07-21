@@ -34,6 +34,28 @@ To get more controlable result, it is recommended to use reference image and con
 After using the reference image, enabling 'crop-ref' will divide the reference image according to the video segmentation plan, and use the segmented reference image for the region reference when denoising each segmented part. If enable 'ref_as_init_frame', the first frame of the video will be directly replaced with the reference image, and this will be used as a reference to guide the following frames denoising of each region.   
 For control video, VACE supports many control methods, and you can freely try the differences brought by different control methods.
 
+## SuperUltimateVaceLongVideo
+利用VACE拼接功能生成长视频，支持多种控制手段，自动修复过渡帧，缓解多轮接续生成带来的视频质量劣化  
+Generate long length videos with the feature 'temporal extension' of VACE. Support many control methods, automatically refine the crossfade frames, mitigating the quality downgrade from multiple extensions.
+
+### 多轮生成 | Multi-Round generation
+你可以在多个`VACE Prompt Combine`节点内编写不同的提示词，指定不同的参考图片，只需要将它们连在一起在连接到`SuperUltimate VACE Long Video`节点。轮次数目没有上限，但由于多轮接续生成花费的时间很长，并且存在不可控的随机性，不建议过长的视频生成。  
+You can write different prompts within multiple `VACE Prompt Combine` nodes, specify different reference images, and cascade them together and connect to the `SuperUltimate VACE Long Video` node. There is no upper limit to the number of rounds, but due to the long time it takes to generate multiple extensions and the uncontrollable randomness, it is not recommended to generate too long videos.
+
+### 多种控制 ! Multi-Methods control
+VACE模型支持许多种控制，包括关键帧、骨骼姿势、深度图、线稿、轨迹动画等等。你可以在一个视频中使用多种不同类型的控制，只需要使用多个`VACE Control Image Combine`节点。但需要注意控制图的帧位不能重复。  
+如果需要无缝首尾循环视频，只需要为`loopback_crossfade`设置一个大于0的适当数字即可，不需要进行额外的图片控制。  
+VACE models support many kinds of controls, including keyframes, pose, depth, lineart, trajectory animation, and more. You can use multiple different types of controls in a single video, simply by using multiple `VACE Control Image Combine` nodes. However, you need to be careful that the frame positions of the control image are not duplicated.  
+If you need a seamless first and last loopback video, just set an appropriate number greater than 0 for `loopback_crossfade`, no additional image controls are needed.  
+
+### 缓解多轮接续造成的质量下降 | Mitigating quality degradation due to multiple rounds of generation
+VACE可以使用上一轮视频最后几帧作为新一轮生成视频的前几帧，以此实现视频的接续。但一直以来有个问题制约它的应用，那就是随着接续轮次数目增多，生成视频的质量不断下降，出现过饱和、色差、模糊等等问题。  
+本节点通过为新一轮视频的前几个参考帧进行“修复”的途径，有效缓解了多轮次生成造成的质量下降。但是这么做也会造成一个后果，接续过渡部分的帧的颜色或者亮度会出现不自然变化。  
+好在副作用并不明显，你也可以自行修改`Custom Refine Option`节点的参数尝试获得更自然的过渡。  
+VACE can use the last few frames of the previous round of video as the initial few frames of the new round of generation, thus realizing the extension of video. However, there has been a problem that constrains its application, that is, as the number of extent rounds increases, the quality of the generated video decreases, and problems such as oversaturation, chromatic aberration, blurring, etc. occur.  
+This node effectively mitigates the quality degradation caused by multiple rounds of generation by “refine” the inital few reference frames of a new round of video. However, this also has the consequence that the color or brightness of these frames may change unnaturally.  
+The side effect is not obvious, but you can also modify the parameters of the `Custom Refine Option` node to try to get a more natural transition.
+
 ## 安装 | Install
 方法1：在`ComfyUI\custom_nodes`路径下执行命令  
 Way 1: run following cmd command at the path `ComfyUI\custom_nodes`

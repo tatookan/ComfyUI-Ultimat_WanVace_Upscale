@@ -676,7 +676,6 @@ QQ群：948626609
             else:
                 controls = control_video[processed_frame_count - init_crossfade_frame:processed_frame_count - init_crossfade_frame + num_frame].clone()
                 mask_ctl = control_mask[processed_frame_count - init_crossfade_frame:processed_frame_count - init_crossfade_frame + num_frame].clone()
-                controls[:init_crossfade_frame] = sampled[-1][-init_crossfade_frame:] * (1 - refine_init) + torch.full((init_crossfade_frame, height, width, 3), refine_init, device='cpu')
                 for i in range(init_crossfade_frame):
                     controls[[i],] = sampled[-1][[i-init_crossfade_frame],] * (1 - refine_percent_list[i]) + torch.full((1, height, width, 3), refine_percent_list[i], device='cpu')
                     mask_ctl[[i],] = torch.full((1, height, width), mask_value_list[i], device='cpu')

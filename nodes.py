@@ -6,7 +6,6 @@ import nodes
 import node_helpers
 import latent_preview
 from comfy.comfy_types import IO
-from comfy.utils import common_upscale
 
 def emptyimage(width, height, batch_size=1, color=(0,0,0)):
     r = torch.full([batch_size, height, width, 1], color[0] / 255, dtype=torch.float32, device="cpu")
@@ -686,7 +685,7 @@ QQ群：948626609
                 custom_mask = item['custom_mask']
                 if custom_mask is not None:
                     if custom_mask.shape[1] != height or custom_mask.shape[2] != width:
-                        custom_mask = common_upscale(custom_mask.unsqueeze(1), width, height, "nearest-exact").squeeze(1)
+                        custom_mask = comfy.utils.common_upscale(custom_mask.unsqueeze(1), width, height, "bilinear", "else").squeeze(1)
                 control_video[index_start:index_end + 1] = control_images[:index_end + 1 - index_start]
                 if custom_mask is None and item['masked'] is True :
                     control_mask[index_start:index_end + 1] = torch.full((index_end + 1 - index_start, height, width), 0.0, device='cpu')

@@ -115,16 +115,17 @@ def temporalistgen(num_total_frame, length, num_crossfade, num_loopback_crossfad
         raise ValueError("temporalistgen: 视频帧数应该大于或等于length\nframe count of input video should be larger than or equal to length")
     res_frame = num_total_frame
     slice_list = []
-    while res_frame + num_crossfade > length:
-        start_index = num_total_frame - res_frame - num_crossfade if res_frame != num_total_frame else 0
-        res_frame = res_frame - length
+    start_index = 0
+    while start_index + length < num_total_frame:
         slice_list.append({
             'start_index': start_index,
             'length': length,
             'num_crossfade': num_crossfade,
             'flag_final_slice': False,
         })
-    res_frame += num_crossfade
+        start_index = start_index + length - num_crossfade
+
+    res_frame = num_total_frame - start_index
     if (res_frame - 1) % temporal_multiplier != 0:
         res_frame_padded = res_frame + temporal_multiplier - (res_frame - 1) % temporal_multiplier
     else:

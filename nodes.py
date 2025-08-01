@@ -302,6 +302,8 @@ class UltimateVideoUpscaler:
                 "loopback_crossfade": ("INT", {"default": 0, "min": 0, "max": 10000, "step": 1}),
                 "crop_ref": ("BOOLEAN", {"default": False}),
                 "ref_as_init_frame": ("BOOLEAN", {"default": False}),
+                "color_match": ("BOOLEAN", {"default": False}),
+                "color_ref": (["input_video", "reference_image"], {"default": "input_video"}),
                 "noise_aug": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step":0.001, "round": 0.001, }),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True, }),
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, }),
@@ -333,7 +335,7 @@ QQ群：948626609
 """
     
     def upscale_video(self, model, width_upscale, height_upscale, width, height, length, pad_mask_limit, crossfade_frame, loopback_crossfade, 
-                      crop_ref, ref_as_init_frame, noise_aug, input_video, seed, steps, cfg, sampler_name, scheduler, positive, negative, denoise, vae, 
+                      crop_ref, ref_as_init_frame, color_match, color_ref, noise_aug, input_video, seed, steps, cfg, sampler_name, scheduler, positive, negative, denoise, vae, 
                       croparea_list=None, reference_image=None, control_video=None):
         if control_video is not None and control_video.shape[0] != input_video.shape[0]:
             raise ValueError("控制视频帧数与输入视频帧数应当一致\nFrame count of ControlVideo and InputVideo should be the same")
@@ -424,6 +426,16 @@ QQ群：948626609
             crossed_start = crossfadevideos(result_video[-loopback_crossfade:], result_video[:loopback_crossfade], loopback_crossfade)
             result_video[:loopback_crossfade] = crossed_start
             result_video = result_video[:(total_frame - loopback_crossfade)]
+        if color_match is True:
+            matched_list = []
+            for i in range(result_video.shape[0]):
+                if color_ref == 'reference_image' and reference_image is not None:
+                    ref = reference_image
+                else:
+                    ref = input_video[[i],] 
+                matched = colormatch(ref, result_video[[i],])
+                matched_list.append(matched)
+            result_video = torch.cat(matched_list, dim=0)
         return (result_video, )
 
 class CustomCropArea:

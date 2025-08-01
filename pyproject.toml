@@ -2,7 +2,7 @@
 [project]
 name = "ComfyUI-SuperUltimateVaceTools"
 description = "powerful nodes for wan2.1 vace"
-version = "0.2.2"
+version = "0.2.3"
 license = { file = "LICENSE.txt" }
 dependencies  = [] 
 

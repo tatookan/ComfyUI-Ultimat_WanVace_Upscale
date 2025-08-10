@@ -2,7 +2,7 @@
 [project]
 name = "ComfyUI-SuperUltimateVaceTools"
 description = "powerful nodes for wan2.1 vace"
-version = "0.2.3"
+version = "0.3.0"
 license = { file = "LICENSE.txt" }
 dependencies  = [] 
 
@@ -13,3 +13,4 @@ Repository = "https://github.com/bbaudio-2025/ComfyUI-SuperUltimateVaceTools"
 PublisherId = "bbaudio" 
 DisplayName = "ComfyUI-SuperUltimateVaceTools" 
 Icon = ""
+

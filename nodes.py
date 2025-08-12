@@ -1,6 +1,6 @@
 import torch
 import comfy
-from .nag.sample import sample_with_nag
+from .nag.compatibility import WanCompatibilityAdapter
 import nodes
 import node_helpers
 import latent_preview
@@ -281,20 +281,24 @@ def vace_sample(model, positive, negative, vae, width, height, length, strength,
     callback = latent_preview.prepare_callback(model, steps)
     disable_pbar = not comfy.utils.PROGRESS_BAR_ENABLED
     if nag_parameters is None:
-        samples = comfy.sample.sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative, latent,
-                                    denoise=denoise, disable_noise=None, start_step=None, last_step=None,
-                                    force_full_denoise=False, noise_mask=None, callback=callback, disable_pbar=disable_pbar, seed=seed)
+        adapter = WanCompatibilityAdapter(model)
+        sampler = adapter.get_sampler(model, steps=steps, device=model.load_device, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model_options=model.model_options)
+        samples = sampler.sample(noise, positive, negative, latent_image=latent, denoise_mask=None, callback=callback, disable_pbar=disable_pbar, seed=seed)
     else:
         nag_scale = nag_parameters['nag_scale']
         nag_tau = nag_parameters['nag_tau']
         nag_alpha = nag_parameters['nag_alpha']
         nag_sigma_end = nag_parameters['nag_sigma_end']
         nag_negative = negative
-        samples = sample_with_nag(model, noise, steps, cfg, nag_scale, nag_tau, nag_alpha, nag_sigma_end, sampler_name, scheduler, positive,
-            negative, nag_negative, latent,
-            denoise=denoise, disable_noise=False, start_step=None, last_step=None,
-            force_full_denoise=False, noise_mask=None, callback=callback, disable_pbar=disable_pbar,
-            seed=seed)
+        
+        adapter = WanCompatibilityAdapter(model)
+        sampler = adapter.get_sampler(model, steps=steps, device=model.load_device, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model_options=model.model_options)
+        
+        samples = sampler.sample(noise, positive, negative, nag_negative,
+            cfg=cfg, nag_scale=nag_scale, nag_tau=nag_tau, nag_alpha=nag_alpha, nag_sigma_end=nag_sigma_end,
+            latent_image=latent,
+            start_step=None, last_step=None, force_full_denoise=False,
+            denoise_mask=None, sigmas=None, callback=callback, disable_pbar=disable_pbar, seed=seed)
     samples = samples[:, :, trim_latent:]
     images = vae.decode(samples)
     if len(images.shape) == 5: #Combine batches
@@ -372,6 +376,7 @@ class UltimateVideoUpscaler:
                 "reference_image": ("IMAGE", ),
                 "control_video": ("IMAGE", ),
                 "nag_params": ("NAGParamtersSetting", ),
+                "moe_params": ("MOEParamtersSetting", ),
             }
         }
 
@@ -1076,6 +1081,33 @@ class NAGParamtersSetting:
         }
         return (result, )
 
+class MOEParamtersSetting:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "expert_count": ("INT", {"default": 8, "min": 4, "max": 16}),
+                "high_noise_ratio": ("FLOAT", {"default": 0.75, "min": 0.5, "max": 0.9}),
+                "expert_dropout": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 0.3}),
+                "load_balancing": ("FLOAT", {"default": 0.01, "min": 0.0, "max": 0.1}),
+            },
+        }
+
+    RETURN_TYPES = ("MOEParamtersSetting", )
+    RETURN_NAMES = ("moe_params", )
+    FUNCTION = "set_moe_parames"
+
+    CATEGORY = "SuperUltimateVaceTools"
+    DESCRIPTION = ""
+    def set_moe_parames(self, expert_count, high_noise_ratio, expert_dropout, load_balancing):
+        result = {
+            'expert_count': expert_count,
+            'high_noise_ratio': high_noise_ratio,
+            'expert_dropout': expert_dropout,
+            'load_balancing': load_balancing
+        }
+        return (result, )
+
 class RefineTest:
     @classmethod
     def INPUT_TYPES(s):
@@ -1120,6 +1152,7 @@ NODE_CLASS_MAPPINGS = {
     "VACEPromptCheckTotalFrame": VACEPromptCheckTotalFrame,
     "CustomRefineOption": CustomRefineOption,
     "NAGParamtersSetting": NAGParamtersSetting,
+    "MOEParamtersSetting": MOEParamtersSetting,
     "RefineTest": RefineTest,
 }
 
@@ -1133,5 +1166,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "VACEPromptCheckTotalFrame": "Check Total Frame",
     "CustomRefineOption": "Custom Refine Option",
     "NAGParamtersSetting": "NAG Paramters Setting",
+    "MOEParamtersSetting": "MOE Paramters Setting",
     "RefineTest": "RefineTest",
 }
